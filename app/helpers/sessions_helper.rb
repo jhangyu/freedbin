@@ -12,7 +12,7 @@ module SessionsHelper
 
   def current_user
     @current_user ||= begin
-      if request.subdomain == "api"
+      if request.path.start_with?('/v2')
         authenticate_with_http_basic do |username, password|
           User.where('lower(email) = ?', username.try(:downcase)).take.try(:authenticate, password)
         end

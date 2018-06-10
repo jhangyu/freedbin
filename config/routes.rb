@@ -196,11 +196,9 @@ Rails.application.routes.draw do
     end
   end
 
-  constraints subdomain: 'api' do
-    namespace :api, path: nil do
-      namespace :v1 do
-        match '*path', to: 'api#gone', via: :all
-      end
+  namespace :api, path: nil do
+    namespace :v1 do
+      match '*path', to: 'api#gone', via: :all
     end
   end
 

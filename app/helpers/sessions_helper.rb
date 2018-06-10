@@ -24,7 +24,7 @@ module SessionsHelper
 
   def authorize
     if !signed_in?
-      if request.subdomain == "api"
+      if request.path.start_with?('/v2')
         request_http_basic_authentication
       else
         flash[:notice] = "Please log in."

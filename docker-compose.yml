@@ -3,6 +3,8 @@ services:
   app:
     image: rachsharp/feedbin
     environment:
+      - MERCURY_API_KEY=
+      - SECRET_KEY_BASE=
       - POSTGRES=postgres
       - POSTGRES_USERNAME=feedbin
       - POSTGRES_PASSWORD=feedbin

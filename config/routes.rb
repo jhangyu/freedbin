@@ -25,7 +25,7 @@ Rails.application.routes.draw do
   get '/starred/:starred_token', to: 'starred_entries#index', as: 'starred'
   post '/starred/export', to: 'starred_entries#export'
 
-  # get    :signup,         to: 'users#new',           as: 'signup'
+  get    :signup,         to: 'users#new',           as: 'signup'
   get    :login,          to: 'sessions#new',        as: 'login'
   delete :logout,         to: 'sessions#destroy',    as: 'logout'
 

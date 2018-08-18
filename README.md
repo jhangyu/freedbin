@@ -21,8 +21,8 @@ Installation
 
 All the minimum necessary config parameters required for it to run are set in the Dockerfile. All the config parameters required for interconnectivity with the db etc, are specified in the docker compose file.
 
-Differences
------------
+Differences to the original
+---------------------------
 
  - Will work without a payment system like stripe
  - Doesn't require HTTPS to be enabled (for if you are using at home, or from behind a reverse proxy)

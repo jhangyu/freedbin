@@ -2,10 +2,24 @@ version: '3'
 services:
   app:
     image: rachsharp/feedbin
+    environment:
+      - POSTGRES=postgres
+      - POSTGRES_USERNAME=feedbin
+      - POSTGRES_PASSWORD=feedbin
+      - PGPASSWORD=feedbin
+      - DATABASE_URL=postgres://feedbin:feedbin@postgres:5432/feedbin_production
+      - CAMO_HOST=http://camo:8081
+      - CAMO_KEY=be-vewy-secwet
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - REDIS_URL=redis://redis:6379
+      - MEMCACHED_HOSTS=memcached:11211
     ports:
       - 9292:9292
   postgres:
     image: postgres
+    environment:
+      - POSTGRES_USER=feedbin
+      - POSTGRES_PASSWORD=feedbin
     expose:
       - 5432
     volumes:
@@ -26,8 +40,13 @@ services:
       - 9200
   refresher:
     image: rachsharp/feedbin-refresher
+    environment:
+      - REDIS_URL=redis://redis:6379
   camo:
     image: inventid/camo
+    environment:
+      - CAMO_KEY=be-vewy-secwet
+      - CAMO_HOSTNAME=camo
     expose:
       - 8081
 volumes:

@@ -11,7 +11,7 @@ Rails.application.configure do
   config.eager_load = true
 
   # Full error reports are disabled and caching is turned on.
-  config.consider_all_requests_local       = false
+  config.consider_all_requests_local = false
   config.action_controller.perform_caching = true
 
   # Attempt to read encrypted secrets from `config/secrets.yml.enc`.
@@ -34,7 +34,7 @@ Rails.application.configure do
 
   # Specifies the header that your server uses for sending files.
   # config.action_dispatch.x_sendfile_header = 'X-Sendfile' # for Apache
-  config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect' # for NGINX
+  config.action_dispatch.x_sendfile_header = "X-Accel-Redirect" # for NGINX
 
   # Mount Action Cable outside main process or domain
   # config.action_cable.mount_path = nil
@@ -59,13 +59,13 @@ Rails.application.configure do
   config.logger = Logger.new(STDOUT)
 
   # Recommended by http://help.papertrailapp.com/kb/configuration/unicorn
-  config.logger.level = Logger.const_get('INFO')
+  config.logger.level = Logger.const_get("INFO")
 
   # Prepend all log lines with the following tags.
-  config.log_tags = [ :subdomain, :uuid ]
+  config.log_tags = [:subdomain, :uuid]
 
   # Use a different cache store in production.
-  config.cache_store = :dalli_store, ENV['MEMCACHED_HOSTS'].split(',')
+  config.cache_store = :dalli_store, ENV["MEMCACHED_HOSTS"].split(",")
 
   # Use a real queuing backend for Active Job (and separate queues per environment)
   # config.active_job.queue_adapter     = :resque
@@ -91,14 +91,14 @@ Rails.application.configure do
   # config.logger = ActiveSupport::TaggedLogging.new(Syslog::Logger.new 'app-name')
 
   if ENV["RAILS_LOG_TO_STDOUT"].present?
-    logger           = ActiveSupport::Logger.new(STDOUT)
+    logger = ActiveSupport::Logger.new(STDOUT)
     logger.formatter = config.log_formatter
-    config.logger    = ActiveSupport::TaggedLogging.new(logger)
+    config.logger = ActiveSupport::TaggedLogging.new(logger)
   end
 
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 
-  config.action_mailer.default_url_options = { host: ENV['DEFAULT_URL_OPTIONS_HOST'], protocol: 'https' }
-
+  config.action_mailer.default_url_options = {host: ENV["DEFAULT_URL_OPTIONS_HOST"], protocol: "https"}
 end
+

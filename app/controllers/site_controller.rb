@@ -1,5 +1,4 @@
 class SiteController < ApplicationController
-
   skip_before_action :authorize, only: [:index]
   before_action :check_user, if: :signed_in?
 
@@ -48,9 +47,11 @@ class SiteController < ApplicationController
         proxy_images: !@user.setting_on?(:disable_image_proxy),
         twitter_embed_path: twitter_embeds_path,
         instagram_embed_path: instagram_embeds_path,
+        theme: @user.theme || "day",
+        favicon_colors: @user.setting_on?(:favicon_colors),
       }
 
-      render action: 'logged_in'
+      render action: "logged_in"
     else
       render_file_or("home/index.html", :ok) {
         redirect_to login_url
@@ -65,7 +66,7 @@ class SiteController < ApplicationController
   def headers
     @user = current_user
     if @user.admin?
-      @headers = request.env.select {|k,v| k =~ /^HTTP_/}
+      @headers = request.env.select { |k, v| k =~ /^HTTP_/ }
     end
   end
 
@@ -73,8 +74,7 @@ class SiteController < ApplicationController
 
   def check_user
     if current_user.suspended
-      redirect_to settings_billing_url, alert: 'Please update your billing information to use Feedbin.'
+      redirect_to settings_billing_url, alert: "Please update your billing information to use Feedbin."
     end
   end
-
 end

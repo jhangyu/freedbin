@@ -5,15 +5,19 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
 
   def login_as(user)
     visit login_path
-    fill_in 'Email', with: user.email
-    fill_in 'Password', with: default_password
-    click_button 'Login'
+    fill_in "Email", with: user.email
+    fill_in "Password", with: default_password
+    click_button "Login"
   end
 
-  def show_article
+  def show_article_setup
     @user = users(:ben)
     @feed = create_feeds(@user, 1).first
     @entries = @user.entries
+  end
+
+  def show_article
+    show_article_setup
 
     login_as(@user)
 
@@ -27,6 +31,6 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   end
 
   def finished_all_ajax_requests?
-    page.evaluate_script('jQuery.active').zero?
+    page.evaluate_script("jQuery.active").zero?
   end
 end

@@ -1,5 +1,5 @@
 class Subscription < ApplicationRecord
-  attr_accessor :entries_count, :post_volume
+  attr_accessor :entries_count, :post_volume, :sort_data, :tag_names
 
   belongs_to :user
   belongs_to :feed, counter_cache: true
@@ -8,7 +8,6 @@ class Subscription < ApplicationRecord
   before_destroy :mark_as_read
 
   before_create :expire_stat_cache
-  before_destroy :expire_stat_cache
 
   after_create :add_feed_to_action
   after_commit :remove_feed_from_action, on: [:destroy]
@@ -36,8 +35,8 @@ class Subscription < ApplicationRecord
   end
 
   def mark_as_unread
-    base = Entry.select(:id, :feed_id, :published, :created_at).where(feed_id: self.feed_id).order('published DESC')
-    entries = base.where('published > ?', Time.now.ago(2.weeks)).limit(10)
+    base = Entry.select(:id, :feed_id, :published, :created_at).where(feed_id: self.feed_id).order("published DESC")
+    entries = base.where("published > ?", Time.now.ago(2.weeks)).limit(10)
     if entries.length == 0
       entries = base.limit(3)
     end
@@ -64,11 +63,11 @@ class Subscription < ApplicationRecord
   end
 
   def untag
-    self.feed.tag('', self.user)
+    self.feed.tag("", self.user)
   end
 
   def muted_status
-    if subscription.muted
+    if self.muted
       "muted"
     end
   end
@@ -78,5 +77,4 @@ class Subscription < ApplicationRecord
   def refresh_favicon
     FaviconFetcher.perform_async(self.feed.host)
   end
-
 end

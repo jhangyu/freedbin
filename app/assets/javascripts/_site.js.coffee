@@ -1,25 +1,126 @@
 window.feedbin ?= {}
 
+(($) ->
+
+  $.fn.isAfter = (sel) ->
+    @prevAll().filter(sel).length != 0
+
+  $.fn.isBefore = (sel) ->
+    @nextAll().filter(sel).length != 0
+
+  return
+) jQuery
+
+
 $.extend feedbin,
 
   messageTimeout: null
   swipe: false
   panel: 1
+  colorHash: new ColorHash()
+
+  faviconColors: (target) ->
+    if feedbin && feedbin.data && feedbin.data.favicon_colors
+      $(".favicon-default", target).each ->
+        host = $(@).data("host")
+        color = feedbin.colorHash.hex(host)
+        $(@).css
+          "background-color": color
+
+  calculateColor: (backgroundColor, foregroundColor) ->
+    canvas = document.createElement('canvas')
+    canvas.style.display = 'none'
+    canvas.width = 10
+    canvas.height = 10
+    document.body.appendChild canvas
+
+    context = canvas.getContext('2d')
+    context.fillStyle = backgroundColor
+    context.fillRect 0, 0, 10, 10
+    context.fillStyle = foregroundColor
+    context.fillRect 0, 0, 10, 10
+    data = context.getImageData(1, 1, 1, 1)
+    "rgba(#{data.data[0]}, #{data.data[1]}, #{data.data[2]}, #{data.data[3]})"
+
+  setNativeTitleColor: (rgb, timeout = 1) ->
+    ctx = document.createElement('canvas').getContext('2d')
+    ctx.strokeStyle = rgb
+    hex = ctx.strokeStyle
+    feedbin.themeColorHex = hex
+    setTimeout ( ->
+      feedbin.nativeMessage("performAction", { action: "titleColor", color: hex })
+    ), timeout
+
+  nativeMessage: (name, data) ->
+    if typeof(webkit) != "undefined" && webkit.messageHandlers && webkit.messageHandlers.turbolinksDemo
+      webkit.messageHandlers.turbolinksDemo.postMessage
+        name: name
+        data: data
+
+  scrollBars: ->
+    width = 100
+
+    outer = $('<div><div></div></div>').css
+      "width": "#{width}px"
+      "height": "100px"
+      "overflow-y": "scroll"
+      "position": "absolute"
+      "top": "-99999px"
+      "left": "-99999px"
+
+    inner = outer.find('div').css
+      "width": "100%"
+      "height": "200px"
+
+    $("body").append(outer)
+
+    result = inner.outerWidth() < width
+
+    outer.remove()
+
+    result
+
+  scrollToTop: ->
+    element = null
+    if feedbin.panel == 1
+      element = $(".feeds")
+    else if feedbin.panel == 2
+      element = $(".entries")
+    else if feedbin.panel == 3
+      element = $(".entry-content")
+
+    if element
+      element.css
+        "-webkit-overflow-scrolling": "auto"
+      element.animate {scrollTop: 0}, {
+        duration: 150,
+        complete: ()->
+          element.css
+            "-webkit-overflow-scrolling": "touch"
+      }
+
+
+  toggleDiff: ->
+    $('[data-behavior~=diff_view_changes]').toggleClass("hide")
+    $('[data-behavior~=diff_view_latest]').toggleClass("hide")
+
+    $('[data-behavior~=diff_latest]').toggleClass("hide")
+    $('[data-behavior~=diff_content]').toggleClass("hide")
 
   drawBarCharts: ->
     $('[data-behavior~=line_graph]').each ()->
       feedbin.drawBarChart(@, $(@).data('values'))
 
-  modalContent: (html, css) ->
+  modalContent: (html) ->
     modal = $('#general_modal')
     target = $('[data-behavior~=markup_target]', modal)
-    $('.modal-dialog', modal).addClass(css)
 
     placeholder = $('[data-behavior~=modal_placeholder]', modal)
     placeholder.addClass('hide')
     target.html(html)
 
   showFeedList: ->
+    $('[data-behavior~=feeds_target]').removeClass('hide')
     $('[data-behavior~=feeds_target]').addClass('in')
 
   mobileView: ->
@@ -35,34 +136,21 @@ $.extend feedbin,
         window.history.replaceState({panel: 1}, document.title, "/");
       $('body').addClass('nothing-selected').removeClass('feed-selected entry-selected')
       if feedbin.swipe
-        $('.app-wrap').animate({scrollLeft: 0}, {duration: 250})
+        $('.app-wrap').animate({scrollLeft: 0}, {duration: 150})
     else if panel == 2
       if state && feedbin.mobileView()
         window.history.pushState({panel: 2}, document.title, "/");
       $('body').addClass('feed-selected').removeClass('nothing-selected entry-selected')
       if feedbin.swipe
         offset = $('.entries-column')[0].offsetLeft
-        $('.app-wrap').animate({scrollLeft: offset}, {duration: 250})
+        $('.app-wrap').animate({scrollLeft: offset}, {duration: 150})
     else if panel == 3
       if state && feedbin.mobileView()
         window.history.pushState({panel: 3}, document.title, "/");
       $('body').addClass('entry-selected').removeClass('nothing-selected feed-selected')
       if feedbin.swipe
         offset = $('.entry-column')[0].offsetLeft
-        $('.app-wrap').animate({scrollLeft: offset}, {duration: 250})
-
-  affix: ->
-    $('[data-behavior~=modal_affix]').affix
-      target: '#view_link_wrap'
-      offset: {
-          top: 40
-      }
-
-    $('[data-behavior~=modal_affix]').on 'affixed.bs.affix', (event) ->
-      $(event.target).prependTo("#view_link_wrap");
-
-    $('[data-behavior~=modal_affix]').on 'affixed-top.bs.affix', (event) ->
-      $(event.target).prependTo("[data-behavior~=modal_affix_top]");
+        $('.app-wrap').animate({scrollLeft: offset}, {duration: 150})
 
 
   showNotification: (text, timeout = 3000, href = '', error = false) ->
@@ -82,22 +170,21 @@ $.extend feedbin,
 
     messages.text(text)
     messages.addClass('show')
+    messages.addClass('slide')
     feedbin.messageTimeout = setTimeout ( ->
-      messages.removeClass('show')
+      messages.removeClass('slide')
+      setTimeout ( ->
+        messages.removeClass('show')
+      ), 200
     ), timeout
 
   hideNotification: ->
     messages = $('[data-behavior~=messages]')
-    messages.removeClass('show')
+    messages.removeClass('slide')
+    setTimeout ( ->
+      messages.removeClass('show')
+    ), 200
 
-  previewHeight: ->
-    container = $('[data-behavior~=preview_min_height]')
-    preview = $('[data-behavior~=preview_container]')
-    minHeight = 85
-    if container.length > 0 && preview.length > 0
-      if preview.outerHeight() > minHeight
-        minHeight = container.outerHeight()
-      container.css(height: "#{minHeight}px")
 
   updateEntries: (entries, header) ->
     $('.entries ul').html(entries)
@@ -110,9 +197,67 @@ $.extend feedbin,
   updatePager: (html) ->
     $('[data-behavior~=pagination]').html(html)
 
-  updateEntryContent: (html) ->
+  entryChanged: ->
+    !feedbin.previousEntry || !feedbin.previousEntry.container.is(feedbin.selectedEntry.container)
+
+  animateEntryContent: (content) ->
+    innerContent = $('[data-behavior~=inner_content_target]')
+
+    if $(feedbin.selectedEntry.container.closest("li")).isAfter(feedbin.previousEntry.container.closest("li"))
+      next = $('<div class="next-entry load-next-entry"></div>')
+      transitionClass = "slide-up"
+    else
+      next = $('<div class="previous-entry load-next-entry"></div>')
+      transitionClass = "slide-down"
+
+    next.html(content)
+
+    next.insertAfter(innerContent)
+
+    setTimeout ( ->
+      next.removeClass("load-next-entry")
+      $(".entry-content", innerContent).addClass(transitionClass)
+    ), 1
+
+    setTimeout ( ->
+      next.removeClass("next-entry")
+      next.removeClass("previous-entry")
+      next.attr("data-behavior", "inner_content_target")
+      innerContent.remove()
+    ), 200
+
+  shouldAnimate: ->
+    offset = $('.entry-column')[0].offsetLeft
+    scroll = $('.app-wrap')[0].scrollLeft
+
+    if feedbin.previousEntry && feedbin.mobileView()
+      if scroll > 0
+        if offset == scroll
+          true
+      else if feedbin.panel == 3
+        true
+
+  updateEntryContent: (meta, content = "") ->
     feedbin.closeEntryBasement(0)
-    $('[data-behavior~=entry_content_target]').html(html)
+    metaTarget = $('[data-behavior~=entry_meta_target]')
+    innerContent = $('[data-behavior~=inner_content_target]')
+
+    metaTarget.html(meta)
+
+    if meta == ""
+      feedbin.previousEntry = null
+      feedbin.selectedEntry = null
+      $('.entry-column').removeClass("has-content")
+      innerContent.html("")
+    else
+      $('.entry-column').addClass("has-content")
+
+    if !feedbin.entryChanged()
+      innerContent.html(content)
+    else if feedbin.shouldAnimate()
+      feedbin.animateEntryContent(content)
+    else
+      innerContent.html(content)
 
   updateFeeds: (feeds) ->
     $('[data-behavior~=feeds_target]').html(feeds)
@@ -258,18 +403,23 @@ $.extend feedbin,
 
   readability: () ->
     feedId = feedbin.selectedEntry.feed_id
+    entryId = feedbin.selectedEntry.id
+
     if feedbin.data.readability_settings[feedId] == true && feedbin.data.sticky_readability
-      $('.button-toggle-content').find('span').addClass('active')
-      content = $('[data-behavior~=readability_loading]').html()
-      $('[data-behavior~=entry_content_wrap]').html(content)
+      feedbin.automaticSubmit = true
+
+      loadingTemplate = $('[data-behavior~=readability_loading]').html()
+
+      feedbin.previousContent = $("[data-entry-id=#{entryId}] [data-behavior~=entry_content_wrap]").html()
+
+      $('[data-behavior~=entry_content_wrap]').html(loadingTemplate)
       $('[data-behavior~=toggle_content_view]').submit()
 
   resetScroll: ->
     $('.entry-content').prop('scrollTop', 0)
 
-  fitVids: (selector = "entry_content_target") ->
-    target = $("[data-behavior~=#{selector}]")
-    target.fitVids({ customSelector: "iframe[src*='youtu.be'], iframe[src*='www.flickr.com'], iframe[src*='view.vzaar.com'], iframe[src*='embed-ssl.ted.com'], iframe[src*='cdn.embedly.com']"});
+  fitVids: (target) ->
+    target.fitVids({ customSelector: "iframe"});
 
   randomNumber: ->
     Math.floor(Math.random() * 1000)
@@ -281,7 +431,7 @@ $.extend feedbin,
         url = urlFinder(item)
         if feedbin.embeds["#{url}"]
           item.replaceWith(feedbin.embeds["#{url}"])
-        else
+        else if url
           id = feedbin.randomNumber()
           item.attr("id", id)
           $.get(embed_url, {url: url, dom_id: id}).fail ->
@@ -302,14 +452,9 @@ $.extend feedbin,
     items = $('blockquote.instagram-media')
 
     urlFinder = (item) ->
-      item.data("instgrmPermalink")
+      item.data("instgrmPermalink") || $("a", item).last().attr("href")
 
     feedbin.embed(items, feedbin.data.instagram_embed_path, urlFinder)
-
-  formatImgur: ->
-    if typeof(imgurEmbed) != "undefined"
-      if $('blockquote.imgur-embed-pub').length > 0
-        window.imgurEmbed.createIframe()
 
   checkType: ->
     element = $('.entry-final-content')
@@ -319,6 +464,27 @@ $.extend feedbin,
         node = tag.nodeName
         if node == "TABLE"
           $('.entry-type-default').removeClass("entry-type-default").addClass("entry-type-newsletter");
+
+  formatIframes: ->
+    $("[data-iframe-src]").each ->
+      container = $(@)
+      id = container.attr("id")
+
+      if feedbin.embeds["#{id}"]
+        container.replaceWith(feedbin.embeds["#{id}"])
+      else
+        container.html $("<div class='inline-spinner'>Loading embed from #{container.data("iframe-host")}…</div>")
+        $.get container.data("iframe-embed-url")
+
+      # if feedbin.data.nice_frames
+      # else
+      #   iframe = $("<iframe>").attr
+      #     "src": container.data("iframe-src")
+      #     "width": container.data("iframe-width")
+      #     "height": container.data("iframe-height")
+      #     "allowfullscreen": true
+      #     "frameborder": 0
+      #   container.replaceWith(iframe)
 
   formatImages: ->
     $("img[data-camo-src]").each ->
@@ -349,12 +515,17 @@ $.extend feedbin,
         img.addClass('hide')
 
   formatEntryContent: (entryId, resetScroll=true, readability=true) ->
+    if feedbin.readabilityXHR != null
+      feedbin.readabilityXHR.abort()
+      feedbin.readabilityXHR = null
+
     feedbin.applyStarred(entryId)
     if resetScroll
       feedbin.resetScroll
     if readability
       feedbin.readability()
     try
+      feedbin.formatIframes()
       feedbin.playState()
       feedbin.timeRemaining(entryId)
       feedbin.syntaxHighlight()
@@ -363,10 +534,8 @@ $.extend feedbin,
       feedbin.audioVideo()
       feedbin.entryTime()
       feedbin.applyUserTitles()
-      feedbin.fitVids()
       feedbin.formatTweets()
       feedbin.formatInstagram()
-      feedbin.formatImgur()
       feedbin.formatImages()
       feedbin.checkType()
     catch error
@@ -375,10 +544,9 @@ $.extend feedbin,
 
   formatLinkContents: ->
     try
+      feedbin.formatIframes()
       feedbin.audioVideo("view_link_markup_wrap")
-      feedbin.fitVids("view_link_markup_wrap")
       feedbin.formatTweets("view_link_markup_wrap")
-      feedbin.formatImgur()
       feedbin.formatImages()
     catch error
       if 'console' of window
@@ -464,9 +632,21 @@ $.extend feedbin,
       feed = next.find('.feed-title').text()
       $('.next-entry-title').text(title)
       $('.next-entry-feed').text(feed)
-      $('.next-entry-preview').removeClass('no-content')
+      $('[data-behavior~=needs_next]').prop('disabled', false)
+      $('[data-behavior~=needs_next]').removeClass('no-content')
     else
-      $('.next-entry-preview').addClass('no-content')
+      $('[data-behavior~=needs_next]').addClass('no-content')
+      $('[data-behavior~=needs_next]').prop('disabled', true)
+
+    previous = feedbin.selectedEntry.container.parents('li').prev()
+    if previous.length
+      $('[data-behavior~=needs_previous]').prop('disabled', false)
+      $('[data-behavior~=needs_previous]').removeClass('no-content')
+    else
+      $('[data-behavior~=needs_previous]').addClass('no-content')
+      $('[data-behavior~=needs_previous]').prop('disabled', true)
+
+
 
   hideSubscribe: ->
     $('.feeds-inner').removeClass('show-subscribe')
@@ -628,14 +808,14 @@ $.extend feedbin,
     feedbin.closeEntryBasementTimeount = setTimeout ( ->
       $('.basement-panel').addClass('hide')
       $('.field-cluster input').blur()
+      $('.entry-basement').removeClass('open')
     ), timeout
 
-    clearTimeout(feedbin.openEntryBasementTimeount)
     $('.entry-basement').removeClass('foreground')
-    top = $('.entry-toolbar').outerHeight()
-    $('.entry-basement').removeClass('open')
-    $('.entry-content').css
-      "top": "41px"
+    if $('.entry-content').length > 0
+      $('.entry-content')[0].style.removeProperty("top")
+
+    clearTimeout(feedbin.openEntryBasementTimeount)
 
   openEntryBasement: (selectedPanel) ->
     feedbin.openEntryBasementTimeount = setTimeout ( ->
@@ -650,7 +830,7 @@ $.extend feedbin,
     $('.basement-panel').addClass('hide')
     selectedPanel.removeClass('hide')
     $('.entry-basement').addClass('open')
-    newTop = selectedPanel.height() + 41
+    newTop = selectedPanel.height()
     $('.entry-content').css
       "top": "#{newTop}px"
 
@@ -660,7 +840,7 @@ $.extend feedbin,
 
   showEntry: (entryId) ->
     entry = feedbin.entries[entryId]
-    feedbin.updateEntryContent(entry.content)
+    feedbin.updateEntryContent(entry.content, entry.inner_content)
     feedbin.formatEntryContent(entryId, true)
 
   tagFeed: (url, tag, noResponse = true) ->
@@ -724,12 +904,14 @@ $.extend feedbin,
       $.ajax(xhr)
     )
 
-  modal: (selector) ->
+  modal: (selector, cssClass = null) ->
     activeModal = $(selector)
     $('.modal').each ->
       unless $(@).get(0) == activeModal.get(0)
         $(@).modal('hide')
     activeModal.modal('toggle')
+    if cssClass
+      activeModal.addClass(cssClass)
 
   loadLink: (href) ->
     form = $("[data-behavior~=view_link_form]")
@@ -772,6 +954,8 @@ $.extend feedbin,
 
   feedXhr: null
 
+  readabilityXHR: null
+
   markReadData: {}
 
   closeSubcription: false
@@ -808,6 +992,31 @@ $.extend feedbin,
 
   init:
 
+    baseFontSize: ->
+      element = document.createElement('div')
+      content = document.createTextNode('content')
+      element.appendChild content
+      element.style.display = 'none'
+      element.style.font = '-apple-system-body'
+
+      if element.style.font == ""
+        base = "16"
+      else
+        document.body.appendChild element
+        style = window.getComputedStyle(element, null)
+        size = style.getPropertyValue 'font-size'
+        base = parseInt(size) - 1
+
+      $("html").css
+        "font-size": "#{base}px"
+
+    faviconColors: ->
+      feedbin.faviconColors($(".feeds-column"))
+
+    hasScrollBars: ->
+      if feedbin.scrollBars()
+        $('body').addClass('scroll-bars')
+
     hasScrollSnap: ->
       if 'scroll-snap-type' of document.body.style
         feedbin.swipe = true
@@ -816,6 +1025,8 @@ $.extend feedbin,
     hasTouch: ->
       if 'ontouchstart' of document
         $('body').addClass('touch')
+      else
+        $('body').addClass('no-touch')
 
     isStandalone: ->
       if 'standalone' of window.navigator && window.navigator.standalone
@@ -843,6 +1054,7 @@ $.extend feedbin,
             "method": "post"
             "action": data.formAction
             "data-behavior": "rename_form"
+            "class": "rename-form"
           form = $('<form>', formAttributes)
 
           inputAttributes =
@@ -878,6 +1090,10 @@ $.extend feedbin,
 
         $('[data-behavior~=rename_form]').remove()
         $('[data-behavior~=rename_title]').removeClass('hide')
+
+      $(document).on 'click', '[data-behavior~=rename_input]', (event) ->
+        event.stopPropagation()
+        event.preventDefault()
 
       $(document).on 'click', '[data-behavior~=open_item]', (event) ->
         unless $(event.target).is('[data-behavior~=rename_input]')
@@ -925,7 +1141,7 @@ $.extend feedbin,
         return
 
     entryLinks: ->
-      $(document).on 'click', '[data-behavior~=entry_content_wrap] a, [data-behavior~=view_link_markup_wrap] a, [data-behavior~=external_links] a', ->
+      $(document).on 'click', '[data-behavior~=external_links] a', ->
         $(this).attr('target', '_blank').attr('rel', 'noopener noreferrer')
         return
 
@@ -986,6 +1202,13 @@ $.extend feedbin,
             value = field.val()
             field.val(value)
             feedbin.autocomplete(field)
+          else
+            wrap.animate {
+              height: '0px'
+            }, 200
+            field = wrap.find('.feed_tag_list')
+            field.blur()
+
         return
 
     resizeWindow: ->
@@ -1059,6 +1282,17 @@ $.extend feedbin,
           id = next.data('entry-id')
           feedbin.preloadImages(id)
         return
+
+    entriesLoading: ->
+      $(document).on 'click', '[data-behavior~=feed_link]', (event) ->
+        $(".entries").addClass("loading")
+        title = $(".collection-label-wrap", @).text()
+        $("[data-behavior~=entries_header] .feed-title-wrap").text(title)
+        true
+
+      $(document).on 'ajax:complete', '[data-behavior~=feed_link]', (event, xhr) ->
+        $(".entries").removeClass("loading")
+        true
 
     feedSelected: ->
       $(document).on 'click', '[data-behavior~=show_feeds]', ->
@@ -1148,11 +1382,20 @@ $.extend feedbin,
         form.submit()
 
     checkBoxToggle: ->
-      $(document).on 'change', '[data-behavior~=toggle_checked]', (event) ->
+      $(document).on 'change', '[data-behavior~=include_all]', (event) ->
         if $(@).is(':checked')
-          $('[type="checkbox"][name]').prop('checked', true)
+          $('[data-behavior~=toggle_checked_target] [type="checkbox"][name]').prop('disabled', true)
         else
-          $('[type="checkbox"][name]').prop('checked', false)
+          $('[data-behavior~=toggle_checked_target] [type="checkbox"][name]').prop('disabled', false)
+
+      $(document).on 'change', '[data-behavior~=toggle_checked]', (event) ->
+
+        $('[data-behavior~=toggle_checked_hidden]').toggleClass('hide')
+
+        if $(@).is(':checked')
+          $('[data-behavior~=toggle_checked_target] [type="checkbox"][name]').prop('checked', true)
+        else
+          $('[data-behavior~=toggle_checked_target] [type="checkbox"][name]').prop('checked', false)
         event.preventDefault()
         return
 
@@ -1202,16 +1445,31 @@ $.extend feedbin,
       return
 
     updateReadability: ->
+      $(document).on 'ajax:complete', '[data-behavior~=toggle_content_view]', (event, xhr) ->
+        feedbin.readabilityXHR = null;
+        $('.button-toggle-content').removeClass('loading')
+
       $(document).on 'ajax:beforeSend', '[data-behavior~=toggle_content_view]', (event, xhr) ->
-        feedId = $(event.currentTarget).data('feed-id')
-        if feedbin.data.sticky_readability && feedbin.data.readability_settings[feedId] != "undefined"
-          unless $("#content_view").val() == "true" && feedbin.data.readability_settings[feedId] == true
-            feedbin.data.readability_settings[feedId] = !feedbin.data.readability_settings[feedId]
+        if feedbin.readabilityXHR
+          feedbin.readabilityXHR.abort()
+          xhr.abort()
 
-        if !$('.button-toggle-content').hasClass('active')
+          feedbin.readabilityXHR = null
+          $('.button-toggle-content').removeClass('loading')
+
+          if feedbin.previousContent
+            $('[data-behavior~=entry_content_wrap]').html(feedbin.previousContent)
+            feedbin.previousContent = null
+        else
           $('.button-toggle-content').addClass('loading')
+          feedbin.readabilityXHR = xhr
 
-        return
+        if feedbin.automaticSubmit != true
+          $.post($(@).data("sticky-url"))
+
+        feedbin.automaticSubmit = false
+
+        true
 
     autoUpdate: ->
       setInterval ( ->
@@ -1319,6 +1577,17 @@ $.extend feedbin,
         event.preventDefault()
         return
 
+    titleBarColor: ->
+      if feedbin.native && feedbin.data.theme
+        rgb = $("[data-theme=#{feedbin.data.theme}]").css("backgroundColor")
+        feedbin.setNativeTitleColor(rgb)
+
+      $(document).on 'click', '[data-behavior~=switch_theme]', (event) ->
+        feedbin.data.theme = $(@).data('theme')
+        if feedbin.native
+          rgb = $("[data-theme=#{feedbin.data.theme}]").css("backgroundColor")
+          feedbin.setNativeTitleColor(rgb)
+
     theme: ->
       $(document).on 'click', '[data-behavior~=switch_theme]', (event) ->
         theme = $(@).data('theme')
@@ -1327,6 +1596,7 @@ $.extend feedbin,
         $('[data-behavior~=class_target]').removeClass('theme-night')
         $('[data-behavior~=class_target]').addClass("theme-#{theme}")
         event.preventDefault()
+
         return
 
     showEntryActions: ->
@@ -1399,11 +1669,11 @@ $.extend feedbin,
         $('#add_form_modal .modal-dialog').removeClass('done');
 
     formProcessing: ->
-      $(document).on 'submit', '[data-behavior~=subscription_form], [data-behavior~=search_form], [data-behavior~=feeds_search]', ->
+      $(document).on 'submit', '[data-behavior~=spinner], [data-behavior~=subscription_form], [data-behavior~=search_form], [data-behavior~=feeds_search]', ->
         $(@).find('input').addClass('processing')
         return
 
-      $(document).on 'ajax:complete', '[data-behavior~=subscription_form], [data-behavior~=search_form], [data-behavior~=feeds_search]', ->
+      $(document).on 'ajax:complete', '[data-behavior~=spinner], [data-behavior~=subscription_form], [data-behavior~=search_form], [data-behavior~=feeds_search]', ->
         $(@).find('input').removeClass('processing')
         if feedbin.closeSubcription
           setTimeout ( ->
@@ -1487,10 +1757,15 @@ $.extend feedbin,
         event.preventDefault()
         return
 
+    loadViewChanges: ->
+      $(document).on 'ajax:beforeSend', '[data-behavior~=load_view_changes]', (event, xhr) ->
+        if $('[data-behavior~=diff_content]').length
+          xhr.abort()
+          feedbin.toggleDiff()
+
     viewLatest: ->
       $(document).on 'click', '.view-latest-link', ->
-        $('.entries .selected a').click()
-        return
+        feedbin.toggleDiff()
 
     serviceOptions: ->
       $(document).on 'click', '[data-behavior~=show_service_options]', (event) ->
@@ -1552,7 +1827,6 @@ $.extend feedbin,
           $('[data-behavior~=class_target]').removeClass("#{setting}-#{option}")
 
         $('[data-behavior~=class_target]').addClass("#{setting}-#{selected}")
-        feedbin.previewHeight()
 
     appearanceCheckbox: ->
       $(document).on 'click', '[data-behavior~=appearance_checkbox]', (event) ->
@@ -1561,7 +1835,6 @@ $.extend feedbin,
         $('[data-behavior~=class_target]').removeClass("#{setting}-1")
         $('[data-behavior~=class_target]').removeClass("#{setting}-0")
         $('[data-behavior~=class_target]').addClass("#{setting}-#{checked}")
-        feedbin.previewHeight()
 
     generalAutocomplete: ->
       $(document).on 'focus', '[data-behavior~=autocomplete_field]', (event) ->
@@ -1587,13 +1860,6 @@ $.extend feedbin,
         $(window).on('resize', throttledResize);
         resize()
 
-
-    minHeight: ->
-      feedbin.previewHeight()
-
-    scrollToFixed: ->
-      unless 'ontouchstart' of document
-        $('.preview-group').scrollToFixed()
 
     tumblrType: ->
       $(document).on 'change', '[data-behavior~=tumblr_type]', ->
@@ -1650,7 +1916,7 @@ $.extend feedbin,
         feedbin.updateFeedSearchMessage()
 
     linkActionsHover: ->
-      $(document).on 'mouseenter mouseleave', '.entry-final-content a', (event) ->
+      $(document).on 'mouseenter mouseleave', 'body:not(.touch) .entry-final-content a', (event) ->
         link = $(@)
         if link.text().trim().length > 0 && !$(@).has('.mejs__container').length > 0 && !link.closest(".system-content").length
           clearTimeout(feedbin.linkActionsTimer)
@@ -1690,7 +1956,7 @@ $.extend feedbin,
 
         target.html('')
 
-        feedbin.modal(id)
+        feedbin.modal(id, $(@).data("modal-class"))
 
     showMessage: ->
       $(document).on 'click', '[data-behavior~=show_message]', (event) ->
@@ -1698,6 +1964,65 @@ $.extend feedbin,
         if message
           feedbin.showNotification(message)
         event.preventDefault()
+
+    autoSubmit: ->
+      throttled = _.throttle((item)->
+        item.closest('form').submit();
+      800);
+
+      $(document).on 'input', '[data-behavior~=autosubmit]', (event) ->
+        throttled($(@))
+
+    loadIframe: ->
+      $(document).on 'click', '[data-behavior~=iframe_placeholder]', (event) ->
+
+        iframe = $("<iframe>").attr
+          "src": $(@).data("iframe-src")
+          "width": $(@).data("iframe-width")
+          "height": $(@).data("iframe-height")
+          "allowfullscreen": true
+          "frameborder": 0
+
+        target = $("[data-behavior~=iframe_target]", @)
+        if target.length == 0
+          $(@).html iframe
+          feedbin.fitVids($(@))
+        else
+          target.html iframe
+
+
+
+        $(@).closest(".iframe-embed").addClass("loaded")
+
+    modalShowHide: ->
+      $(document).on 'shown.bs.modal', () ->
+        if background = $("[data-theme=#{feedbin.data.theme}]").css("backgroundColor")
+          color = feedbin.calculateColor(background, "rgba(51, 62, 72, 0.6)")
+          feedbin.setNativeTitleColor(color)
+
+      $(document).on 'hidden.bs.modal', () ->
+        rgb = $("[data-theme=#{feedbin.data.theme}]").css("backgroundColor")
+        feedbin.setNativeTitleColor(rgb)
+
+    scrollLeft: ->
+      entries = $('.entries-column')
+      article = $('.entry-column')
+      $('.app-wrap').on 'scroll', (event) ->
+        position = $(@).prop("scrollLeft")
+
+        entriesPosition = entries.prop("offsetLeft")
+        articlePosition = article.prop("offsetLeft")
+
+        if position == 0
+          feedbin.panel = 1
+        else if position > entriesPosition - 2 && position < entriesPosition + 2
+          feedbin.panel = 2
+        else if position > articlePosition - 2 && position < articlePosition + 2
+          feedbin.panel = 3
+
+    statsBarTouched: ->
+      $(document).on 'feedbin:native:statusbartouched', (event) ->
+        feedbin.scrollToTop()
 
     linkActions: ->
       $(document).on 'click', '[data-behavior~=view_link]', (event) ->

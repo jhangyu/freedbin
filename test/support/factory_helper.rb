@@ -1,5 +1,4 @@
 module FactoryHelper
-
   def create_feeds(users, count = 3)
     flush_redis
     users = [*users]
@@ -24,9 +23,10 @@ module FactoryHelper
       url: Faker::Internet.url,
       content: Faker::Lorem.paragraph,
       public_id: SecureRandom.hex,
+      entry_id: SecureRandom.hex,
       data: {
-        enclosure_url: Faker::Internet.url
-      }
+        enclosure_url: Faker::Internet.url,
+      },
     )
   end
 
@@ -48,9 +48,9 @@ module FactoryHelper
     card = StripeMock.generate_card_token(last4: "4242", exp_month: 99, exp_year: 3005)
     create_stripe_plan(plan)
     user = User.create(
-      email: 'cc@example.com',
+      email: "cc@example.com",
       password: default_password,
-      plan: plan
+      plan: plan,
     )
     user.stripe_token = card
     user.save

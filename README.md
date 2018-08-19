@@ -21,6 +21,10 @@ Installation
 
 All the minimum necessary config parameters required for it to run are set in the Dockerfile. All the config parameters required for interconnectivity with the db etc, are specified in the docker compose file.
 
+The container images are hosted on dockerhub:
+- [Feedbin](https://hub.docker.com/r/rachsharp/feedbin/)
+- [Feedbin Refresher](https://hub.docker.com/r/rachsharp/feedbin-refresher/)
+
 Differences to the original
 ---------------------------
 

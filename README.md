@@ -1,5 +1,5 @@
-Freedbin
-========
+Freedbin 🍔
+==========
 
 [Feedbin](https://github.com/feedbin/feedbin) is a simple, fast and nice looking RSS reader - this fork provides a version intended for users who want to host their own copy of it for free, that can be run anywhere with Docker.
 

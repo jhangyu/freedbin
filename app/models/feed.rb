@@ -35,6 +35,14 @@ class Feed < ApplicationRecord
     self.twitter? || self.twitter_home?
   end
 
+  def tag_with_params(params, user)
+    tags = []
+    tags.concat params[:tag_id].values if params[:tag_id]
+    tags.concat params[:tag_name] if params[:tag_name]
+    tags = tags.join(",")
+    self.tag(tags, user)
+  end
+
   def tag(names, user, delete_existing = true)
     taggings = []
     if delete_existing
@@ -48,6 +56,16 @@ class Feed < ApplicationRecord
       end
     end
     taggings
+  end
+
+  def host_letter
+    letter = "default"
+    if host
+      if segment = host.split(".")[-2]
+        letter = segment[0].downcase
+      end
+    end
+    letter
   end
 
   def self.create_from_parsed_feed(parsed_feed)
@@ -75,7 +93,7 @@ class Feed < ApplicationRecord
     request = Feedkit::Request.new(url: self.feed_url, options: options)
     result = request.status
     if request.body
-      result = Feedkit.fetch_and_parse(self.feed_url, request: request)
+      result = Feedkit::Feedkit.new().fetch_and_parse(self.feed_url, request: request)
     end
     result
   end
@@ -86,10 +104,10 @@ class Feed < ApplicationRecord
       if feed.user_title
         feed.override_title(feed.user_title)
       end
-      feed.title ||= "(No title)"
+      feed.title ||= "Untitled"
       feed
     end
-    feeds.sort_by { |feed| feed.title.try(:downcase) }
+    feeds.natural_sort_by { |feed| feed.title }
   end
 
   def string_id

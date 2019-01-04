@@ -7,8 +7,8 @@
             <div class="inset-content">
                 <h4 class="group-header">Email</h4>
             </div>
-            <ul class="control-group control-group-form">
-                <li>
+            <ul class="control-group">
+                <li class="text">
                     <%= f.email_field :email, placeholder: 'Email' %>
                 </li>
             </ul>
@@ -24,11 +24,11 @@
             <div class="inset-content">
                 <h4 class="group-header">Update Password</h4>
             </div>
-            <ul class="control-group control-group-form">
-                <li>
+            <ul class="control-group">
+                <li class="text">
                     <%= f.password_field :old_password, placeholder: 'Old Password' %>
                 </li>
-                <li>
+                <li class="text">
                     <%= f.password_field :password, placeholder: 'New Password' %>
                 </li>
             </ul>
@@ -48,7 +48,7 @@
                 <p class="muted">Canceling your account will end your subscription immediately. All of your data will be deleted. You will receive a confirmation email with your feed subscriptions attached. <strong>You cannot undo this</strong>.</p>
             </div>
             <% if @last_payment %>
-                <ul class="control-group control-group-form">
+                <ul class="control-group">
                     <li>
                         <%= check_box_tag :billing_event_id, Rails.application.message_verifier(:billing_event_id).generate(@last_payment.id) %>
                         <%= label_tag :billing_event_id do %>

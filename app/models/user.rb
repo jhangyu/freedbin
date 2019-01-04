@@ -42,7 +42,8 @@ class User < ApplicationRecord
                  :twitter_screen_name,
                  :twitter_access_error,
                  :nice_frames,
-                 :favicon_colors
+                 :favicon_colors,
+                 :newsletter_tag
 
   has_one :coupon
   has_many :subscriptions, dependent: :delete_all
@@ -108,8 +109,8 @@ class User < ApplicationRecord
     self.expires_at = Feedbin::Application.config.trial_days.days.from_now
     self.update_auth_token = true
     self.mark_as_read_confirmation = 1
-    self.font = "serif-2"
-    self.font_size = 7
+    self.font = "default"
+    self.font_size = 5
     self.price_tier = Feedbin::Application.config.price_tier
   end
 
@@ -168,7 +169,11 @@ class User < ApplicationRecord
   end
 
   def feed_tags
-    tags.where(id: taggings.pluck(:tag_id)).order(:name).distinct
+    @feed_tags ||= begin
+      Tag.where(id: taggings.distinct.pluck(:tag_id)).natural_sort_by do |tag|
+        tag.name
+      end
+    end
   end
 
   def tag_names
@@ -303,10 +308,6 @@ class User < ApplicationRecord
     logger.error "Stripe Error: " + e.message
     errors.add :base, "#{e.message}."
     CancelBilling.perform_async(customer_id)
-  end
-
-  def feed_with_subscription_id(feed_id)
-    feeds.select("feeds.*, subscriptions.id as subscription_id").where("feeds.id = ? AND subscriptions.user_id = #{self.id}", feed_id).first
   end
 
   def tag_group

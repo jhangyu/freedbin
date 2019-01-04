@@ -13,8 +13,8 @@ class FeedsEntriesController < ApplicationController
     @append = params[:page].present?
 
     # Extra data for updating buttons
-    @feed = @user.feed_with_subscription_id(params[:feed_id])
-    @tags = @user.tags.where(taggings: {feed_id: @feed}).order(:name).pluck(:name)
+    @subscription = @user.subscriptions.where(feed_id: params[:feed_id]).take!
+    @feed = @subscription.feed
     @type = "feed"
     @data = params[:feed_id]
 

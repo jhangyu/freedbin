@@ -17,6 +17,7 @@
                 feedbin.native = true
                 $(function() {
                     $('body').addClass('standalone-navigator');
+                    $('body').addClass('native');
                 });
             </script>
         <% end %>
@@ -26,6 +27,7 @@
     </head>
     <body class="<%= @class %>" data-behavior="<%= @behavior %>">
         <%= content_for?(:content) ? yield(:content) : yield %>
-        <%= render partial: 'shared/fonts' %>
+        <%= render partial: "shared/modals/modal" %>
+        <%= render partial: "shared/theme_colors" %>
     </body>
 </html>

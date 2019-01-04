@@ -17,6 +17,7 @@ Rails.application.configure do
     config.action_controller.perform_caching = true
 
     config.cache_store = :dalli_store
+
     config.public_file_server.headers = {
       "Cache-Control" => "public, max-age=#{2.days.seconds.to_i}",
     }
@@ -40,7 +41,7 @@ Rails.application.configure do
   # Debug mode disables concatenation and preprocessing of assets.
   # This option may cause significant delays in view rendering with a large
   # number of complex assets.
-  config.assets.debug = true
+  config.assets.debug = false
 
   # Suppress logger output for asset requests.
   config.assets.quiet = true
@@ -52,5 +53,7 @@ Rails.application.configure do
   # routes, locales, etc. This feature depends on the listen gem.
   config.file_watcher = ActiveSupport::EventedFileUpdateChecker
 
-  config.action_mailer.default_url_options = {host: "feedbin.dev"}
+  config.action_mailer.default_url_options = { host: ENV.fetch("DEFAULT_URL_OPTIONS_HOST", "feedbin.dev") }
+
+
 end

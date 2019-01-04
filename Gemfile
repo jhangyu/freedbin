@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 git_source(:github) { |name| "https://github.com/#{name}.git" }
 
-gem "rails", "= 5.1.6"
+gem "rails", "= 5.1.6.1"
 
 gem "rails-deprecated_sanitizer"
 gem "rails-controller-testing"
@@ -17,7 +17,6 @@ group :development do
   gem "better_errors"
   gem "silencer"
   gem "benchmark-ips"
-  gem "xipio"
   gem "listen"
   gem "rufo"
   gem "htmlbeautifier"
@@ -37,10 +36,6 @@ group :development, :test do
   gem "minitest-stub_any_instance"
 end
 
-group :production do
-  gem "therubyracer", require: "v8"
-end
-
 gem "pg", "< 1.0"
 gem "unicorn"
 
@@ -48,11 +43,12 @@ gem "feedjira", github: "feedbin/feedjira", ref: "a8a90bb"
 gem "feedkit", github: "feedbin/feedkit", branch: "master"
 
 gem "opml_saw", github: "feedbin/opml_saw", ref: "61d8c2d"
-gem "html-pipeline", github: "feedbin/html-pipeline", ref: "38813c7"
+gem "html-pipeline", github: "feedbin/html-pipeline", ref: "676376c"
 gem "grocer-pushpackager", github: "feedbin/grocer-pushpackager", ref: "6b01b4e", require: "grocer/pushpackager"
 gem "html_diff", github: "feedbin/html_diff", ref: "c7c15ce"
 gem "carrierwave_direct", github: "feedbin/carrierwave_direct", ref: "a0bc323"
 
+gem "mini_racer"
 gem "sassc-rails"
 gem "coffee-rails"
 gem "uglifier", "= 4.1.11"
@@ -97,8 +93,8 @@ gem "raindrops"
 gem "curb"
 gem "twitter"
 gem "twitter-text"
-gem "skylight"
 gem "bootsnap", require: false
+gem "unicode-emoji"
 
 # Stripe
 gem "stripe"

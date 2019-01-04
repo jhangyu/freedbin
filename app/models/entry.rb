@@ -176,7 +176,7 @@ class Entry < ApplicationRecord
   end
 
   def self.entries_list
-    select(:id, :feed_id, :title, :summary, :published, :image, :data, :author)
+    select(:id, :feed_id, :title, :summary, :published, :image, :data, :author, :url)
   end
 
   def self.include_unread_entries(user_id)
@@ -231,8 +231,7 @@ class Entry < ApplicationRecord
     base = as_json(root: false, only: Entry.mappings.to_hash[:entry][:properties].keys.reject { |key| key.to_s.start_with?("twitter") })
     base["title"] = ContentFormatter.summary(self.title)
     base["content"] = ContentFormatter.summary(self.content)
-    base["title_exact"] = base["title"]
-    base["content_exact"] = base["content"]
+    base["emoji"] = (base["title"] + base["content"]).scan(Unicode::Emoji::REGEX).join(" ")
 
     if self.tweet?
       tweets = [self.main_tweet]
@@ -295,7 +294,8 @@ class Entry < ApplicationRecord
       begin
         before = ContentFormatter.format!(self.original["content"], self)
         after = ContentFormatter.format!(self.content, self)
-        result = HTMLDiff::Diff.new(before, after).inline_html.html_safe
+        result = HTMLDiff::Diff.new("<div>#{before}</div>", "<div>#{after}</div>").inline_html
+        result = (result.length > after.length) ? result.html_safe : after.html_safe
       rescue
       end
     end
@@ -403,7 +403,12 @@ class Entry < ApplicationRecord
 
   def save_pages
     if self.tweet?
-      SavePages.perform_async(self.id)
+      cached = SavePages.new().perform(self.id, false)
+      if cached
+        Librato.increment "readability.cached"
+      else
+        SavePages.perform_async(self.id)
+      end
     end
   end
 end

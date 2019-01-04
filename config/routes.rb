@@ -29,6 +29,11 @@ Rails.application.routes.draw do
   get :login, to: "sessions#new", as: "login"
   delete :logout, to: "sessions#destroy", as: "logout"
 
+  get ".well-known/apple-app-site-association", to: "well_known#apple_site_association"
+  get ".well-known/apple-developer-merchantid-domain-association", to: "well_known#apple_pay"
+  get ".well-known/change-password", to: "well_known#change_password"
+
+
   # Apple Push
 
   # When a user allows permission to receive push notifications
@@ -44,6 +49,13 @@ Rails.application.routes.draw do
 
   # Error log
   post "apple_push_notifications/:version/log", as: :apple_push_notifications_log, to: "apple_push_notifications#log"
+
+  resource :app, only: [] do
+    member do
+      get :login
+      get :redirect
+    end
+  end
 
   resources :tags, only: [:index, :show, :update, :destroy]
   resources :billing_events, only: [:show]
@@ -116,6 +128,7 @@ Rails.application.routes.draw do
       match :push, via: [:post, :get]
       post :toggle_updates
       get :modal_edit
+      get :edit_tags
     end
   end
 
@@ -246,13 +259,19 @@ Rails.application.routes.draw do
         end
       end
 
-      resources :subscriptions,         only: [:index, :show, :create, :destroy, :update]
-      resources :favicons,              only: [:index]
-      resources :tags,                  only: [:index]
-      resources :taggings,              only: [:index, :show, :create, :destroy]
+      resources :tags, only: [:index] do
+        collection do
+          post :update
+          delete :destroy
+        end
+      end
+
+      resources :subscriptions, only: [:index, :show, :create, :destroy, :update]
+      resources :favicons, only: [:index]
+      resources :taggings, only: [:index, :show, :create, :destroy]
       resources :recently_read_entries, only: [:index, :create]
-      resources :in_app_purchases,      only: [:create]
-      resources :suggested_categories,  only: [:index]
+      resources :in_app_purchases, only: [:create]
+      resources :suggested_categories, only: [:index]
 
       resources :entries, only: [:index, :show] do
         member do

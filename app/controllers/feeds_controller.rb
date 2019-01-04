@@ -5,10 +5,12 @@ class FeedsController < ApplicationController
 
   def update
     @user = current_user
-    @mark_selected = true
+    @mark_selected = false
 
     @feed = Feed.find(params[:id])
-    @feed.tag(params[:feed][:tag_list], @user)
+    @taggings = @feed.tag_with_params(params, @user)
+
+    @user.update_tag_visibility(@taggings.first.tag.id.to_s, true)
 
     if params[:no_response].present?
       head :ok
@@ -23,11 +25,18 @@ class FeedsController < ApplicationController
     title = params[:feed][:title]
     @subscription.title = title.empty? ? nil : title
     @subscription.save
+    @feed_order = @user.feed_order
   end
 
   def modal_edit
     @user = current_user
     @subscription = @user.subscriptions.find_by_feed_id(params[:id])
+  end
+
+  def edit_tags
+    @user = current_user
+    @feed = @user.feeds.find(params[:id])
+    @tag_editor = TagEditor.new(@user, @feed)
   end
 
   def view_unread
@@ -135,6 +144,7 @@ class FeedsController < ApplicationController
       }
       @feeds = FeedFinder.new(params[:q], config).create_feeds!
       @feeds.map { |feed| feed.priority_refresh(@user) }
+      @tag_editor = TagEditor.new(@user, nil)
     end
   rescue => exception
     logger.info { "------------------------" }

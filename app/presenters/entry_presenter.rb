@@ -126,7 +126,7 @@ class EntryPresenter < BasePresenter
     elsif sanitized_title.present?
       text = sanitized_title
     elsif !entry.summary.blank?
-      text = entry.summary.html_safe
+      text = entry.summary
       length = 240
     end
 
@@ -364,7 +364,7 @@ class EntryPresenter < BasePresenter
 
   def summary
     if !entry.tweet && title?
-      summary = entry.summary.truncate(120, separator: " ", omission: "…").html_safe
+      summary = entry.summary.truncate(120, separator: " ", omission: "…")
       @template.content_tag(:p, summary, class: "body")
     end
   rescue
@@ -541,7 +541,7 @@ class EntryPresenter < BasePresenter
     if entry.tweet.user.profile_image_uri? && entry.tweet.user.profile_image_uri_https("normal")
       @template.camo_link(entry.tweet.user.profile_image_uri_https("normal"))
     else
-      @template.image_url("favicon-profile-default.png ")
+      @template.image_url("favicon-profile-default.png")
     end
   end
 
@@ -550,7 +550,7 @@ class EntryPresenter < BasePresenter
     if tweet.user.profile_image_uri? && tweet.user.profile_image_uri_https(size)
       @template.camo_link(tweet.user.profile_image_uri_https("bigger"))
     else
-      @template.image_url("favicon-profile-default.png ")
+      @template.image_url("favicon-profile-default.png")
     end
   end
 
@@ -578,8 +578,12 @@ class EntryPresenter < BasePresenter
     if tag == :iframe
       @template.content_tag(:iframe, "", src: url, height: 9, width: 16, frameborder: 0, allowfullscreen: true).html_safe
     else
-      transformers = Transformers.new
-      attributes = transformers.iframe_attributes(url, 16, 9)
+      context = {
+        embed_url: Rails.application.routes.url_helpers.iframe_embeds_path,
+        embed_classes: "iframe-placeholder entry-callout system-content",
+      }
+      filter = HTML::Pipeline::IframeFilter.new("", context)
+      attributes = filter.iframe_attributes(url, 16, 9)
       @template.content_tag(:div, "", attributes).html_safe
     end
   end
@@ -629,7 +633,7 @@ class EntryPresenter < BasePresenter
 
   def tweet_text(tweet, tag = true)
     text = entry.tweet_text(tweet)
-    if !text.empty?
+    if text.present?
       if tag
         @template.content_tag(:p, class: "tweet-text") do
           text.html_safe

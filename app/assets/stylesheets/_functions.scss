@@ -29,7 +29,7 @@
 	}
 }
 
-@mixin arrow($x-position, $y-position, $arrow-color, $arrow-color-night, $arrow-color-sunset, $shadow-color, $shadow-color-night, $shadow-color-sunset, $origin:left, $invert:false) {
+@mixin arrow($x-position, $y-position, $arrow-color, $shadow-color, $origin:left, $invert:false) {
 	&:before {
 		@if $origin == left {
 			left: $x-position;
@@ -38,10 +38,10 @@
 			right: $x-position;
 		}
 		@if $invert == true {
-			border-bottom: 6px solid $shadow-color;
+			border-bottom: 6px solid map-get($shadow-color, day);
 		}
 		@else {
-			border-top: 6px solid $shadow-color;
+			border-top: 6px solid map-get($shadow-color, day);
 		}
 		top: $y-position;
 		position: absolute;
@@ -50,18 +50,18 @@
 		content: '';
 		.theme-night & {
 			@if $invert == true {
-				border-bottom-color: $shadow-color-night;
+				border-bottom-color: map-get($shadow-color, dusk);
 			}
 			@else {
-				border-top-color: $shadow-color-night;
+				border-top-color: map-get($shadow-color, dusk);
 			}
 		}
 		.theme-sunset & {
 			@if $invert == true {
-				border-bottom-color: $shadow-color-sunset;
+				border-bottom-color: map-get($shadow-color, sunset);
 			}
 			@else {
-				border-top-color: $shadow-color-sunset;
+				border-top-color: map-get($shadow-color, sunset);
 			}
 		}
 		@content;
@@ -74,11 +74,11 @@
 			right: $x-position + 1;
 		}
 		@if $invert == true {
-			border-bottom: 5px solid $arrow-color;
+			border-bottom: 5px solid map-get($arrow-color, day);
 			top: $y-position + 2;
 		}
 		@else {
-			border-top: 5px solid $arrow-color;
+			border-top: 5px solid map-get($arrow-color, day);
 			top: $y-position;
 		}
 		position: absolute;
@@ -87,98 +87,149 @@
 		content: '';
 		.theme-night & {
 			@if $invert == true {
-				border-bottom-color: $arrow-color-night;
+				border-bottom-color: map-get($arrow-color, dusk);
 			}
 			@else {
-				border-top-color: $arrow-color-night;
+				border-top-color: map-get($arrow-color, dusk);
 			}
 		}
 		.theme-sunset & {
 			@if $invert == true {
-				border-bottom-color: $arrow-color-sunset;
+				border-bottom-color: map-get($arrow-color, sunset);
 			}
 			@else {
-				border-top-color: $arrow-color-sunset;
+				border-top-color: map-get($arrow-color, sunset);
 			}
 		}
 		@content;
 	}
 }
 
-@mixin background-color($day, $night, $sunset) {
-	background-color: $day;
-	.theme-night & {
-		background-color: $night;
-	}
-	.theme-sunset & {
-		background-color: $sunset;
-	}
-}
-
-@mixin color($day, $night, $sunset, $important:false) {
-	@if $important == true {
-    	color: $day !important;
-    	.theme-night & {
-    		color: $night !important;
-    	}
-    	.theme-sunset & {
-    		color: $sunset !important;
-    	}
-	}
-	@else {
-    	color: $day;
-    	.theme-night & {
-    		color: $night;
-    	}
-    	.theme-sunset & {
-    		color: $sunset;
-    	}
-	}
-}
-
-@mixin border-color($day, $night, $sunset) {
-	border-color: $day;
-	.theme-night & {
-		border-color: $night;
-	}
-	.theme-sunset & {
-		border-color: $sunset;
-	}
-}
-
-@mixin stroke($day, $night, $sunset) {
-	stroke: $day;
-	.theme-night & {
-		stroke: $night;
-	}
-	.theme-sunset & {
-		stroke: $sunset;
-	}
-}
-
-@mixin fill($day, $night, $sunset) {
-	fill: $day;
-	.theme-night & {
-		fill: $night;
-	}
-	.theme-sunset & {
-		fill: $sunset;
-	}
-}
-
 @mixin share-icon($x-offset, $y-offset) {
     background-repeat: no-repeat;
-    background-position: 30px + $x-offset 12px + $y-offset;
-    @media (max-width: 528px) {
-        background-position: 15px + $x-offset 12px + $y-offset;
+    background-position: 15px + $x-offset 12px + $y-offset;
+    @include respond-to(screen-sm) {
+        background-position: 30px + $x-offset 12px + $y-offset;
     }
 }
 
-
 @mixin settings-row {
-    padding: 15px 30px;
-    @media (max-width: 528px) {
-        padding-right: 15px;
-        padding-left: 15px;
+    padding: 15px;
+    @include respond-to(screen-sm) {
+        padding: 15px 30px;
     }
+    .modal & {
+        @include padding(14px, 24px, 14px, 24px, 14px, 16px, 14px, 16px);
+    }
+}
+
+@mixin padding($top, $right, $bottom, $left, $top-small, $right-small, $bottom-small, $left-small) {
+    padding: $top-small $right-small $bottom-small $left-small;
+    @include respond-to(screen-sm) {
+        padding: $top $right $bottom $left;
+    }
+}
+
+@mixin theme($property, $map, $root: false, $extra: null) {
+    @if type-of($map) != 'map' {
+        $map: (day: $map, sunset: $map, dusk: $map, midnight: $map);
+    }
+    /* map name: $#{map-get($map, debug)} */
+    #{$property}: map-get($map, day) $extra;
+    @if $root {
+        @at-root {
+            #{selector-append(".theme-night", &)} {
+                /* map name: $#{map-get($map, debug)} */
+                #{$property}: map-get($map, dusk) $extra;
+            }
+            #{selector-append(".theme-sunset", &)} {
+                /* map name: $#{map-get($map, debug)} */
+                #{$property}: map-get($map, sunset) $extra;
+            }
+        }
+    }
+    @else {
+        .theme-night & {
+            /* map name: $#{map-get($map, debug)} */
+            #{$property}: map-get($map, dusk) $extra;
+        }
+        .theme-sunset & {
+            /* map name: $#{map-get($map, debug)} */
+            #{$property}: map-get($map, sunset) $extra;
+        }
+    }
+}
+
+@mixin box-shadow($map, $properties, $args...) {
+    @if type-of($map) != 'map' {
+        $map: (day: $map, sunset: $map, dusk: $map, midnight: $map);
+    }
+    $shadow: (
+        day: $properties map-get($map, day),
+        dusk: $properties map-get($map, dusk),
+        sunset: $properties map-get($map, sunset),
+    );
+    @include theme("box-shadow", $shadow, $args...);
+}
+
+@mixin box-shadow-irregular($args...) {
+    @include theme("box-shadow", $args...);
+}
+
+@mixin color($args...) {
+    @include theme("color", $args...);
+}
+
+@mixin background($args...) {
+    @include theme("background", $args...);
+}
+
+@mixin background-color($args...) {
+    @include theme("background-color", $args...);
+}
+
+@mixin background-image($args...) {
+    @include theme("background-image", $args...);
+}
+
+@mixin border-color($args...) {
+    @include theme("border-color", $args...);
+}
+
+@mixin border($args...) {
+    border-width: 1px;
+    border-style: solid;
+    @include border-color($args...);
+}
+
+@mixin border-top($args...) {
+    border-top-width: 1px;
+    border-top-style: solid;
+    @include border-color($args...);
+}
+
+@mixin border-right($args...) {
+    border-right-width: 1px;
+    border-right-style: solid;
+    @include border-color($args...);
+}
+
+@mixin border-bottom($args...) {
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    @include border-color($args...);
+}
+
+@mixin border-left($args...) {
+    border-left-width: 1px;
+    border-left-style: solid;
+    @include border-color($args...);
+}
+
+@mixin stroke($args...) {
+    @include theme("stroke", $args...);
+}
+
+@mixin fill($args...) {
+    @include theme("fill", $args...);
 }

@@ -106,16 +106,19 @@ class ApplicationController < ActionController::Base
   end
 
   def get_feeds_list
-    @mark_selected = true
+    if @mark_selected.nil?
+      @mark_selected = true
+    end
+
     @user = current_user
 
-    excluded_feeds = @user.taggings.pluck(:feed_id).uniq
-    @feeds = @user.feeds.where.not(id: excluded_feeds).includes(:favicon).include_user_title
+    excluded_feeds = @user.taggings.distinct.pluck(:feed_id)
+    @feeds = @user.feeds.where.not(id: excluded_feeds).includes(:favicon)
 
     @count_data = {
-      unread_entries: @user.unread_entries.pluck("feed_id, entry_id"),
-      starred_entries: @user.starred_entries.pluck("feed_id, entry_id"),
-      updated_entries: @user.updated_entries.pluck("feed_id, entry_id"),
+      unread_entries: @user.unread_entries.pluck("feed_id, entry_id").each_slice(10_000).to_a,
+      starred_entries: @user.starred_entries.pluck("feed_id, entry_id").each_slice(10_000).to_a,
+      updated_entries: @user.updated_entries.pluck("feed_id, entry_id").each_slice(10_000).to_a,
       tag_map: @user.taggings.build_map,
       entry_sort: @user.entry_sort,
     }

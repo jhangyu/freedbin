@@ -5,6 +5,7 @@ class IframeEmbed
 
   def initialize(embed_url)
     @embed_url = URI(embed_url)
+    @embed_url.scheme ||= "http"
     Librato.increment("iframe_embed.source", source: @embed_url.host)
   end
 
@@ -26,10 +27,6 @@ class IframeEmbed
 
   def type
     data && data["type"]
-  end
-
-  def image_url_fallback
-    false
   end
 
   def iframe_src

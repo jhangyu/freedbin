@@ -44,10 +44,12 @@ class Action < ApplicationRecord
         },
       }
       if self.query.present?
+        escaped_query = FeedbinUtils.escape_search(self.query)
         hash[:query][:bool][:must] = {
           query_string: {
-            query: self.query,
+            fields: ["_all", "title.*", "content.*", "emoji", "author", "url"],
             default_operator: "AND",
+            query: escaped_query,
           },
         }
       end

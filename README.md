@@ -28,10 +28,20 @@ The container images are hosted on dockerhub:
 Differences to the original
 ---------------------------
 
+
+**Batteries Included**
+
+
  - Will work without a payment system like stripe
  - Doesn't require HTTPS to be enabled (for if you are using at home, or from behind a reverse proxy)
  - API is served from the main domain rather than an API subdomain.
  - Use open source fonts
+ 
+ **Optional Extras**
+ 
+ - When `ANALYTICS_GTAG` environment variable is set, Google Analytics will be enabled
+ 
+ 
 
 Contributing
 ------------

@@ -27,6 +27,9 @@
     </head>
     <body class="<%= @class %>" data-behavior="<%= @behavior %>">
         <%= content_for?(:content) ? yield(:content) : yield %>
+        <% if ENV["ANALYTICS_GTAG"] != nil %>
+          <%= render partial: "shared/tracking" %>
+        <% end %>
         <%= render partial: "shared/modals/modal" %>
         <%= render partial: "shared/theme_colors" %>
     </body>

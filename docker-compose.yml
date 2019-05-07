@@ -23,6 +23,8 @@ services:
       - 9292:9292
     volumes:
       - r:/feedbin:/feedbin
+    restart:
+      - always
   postgres:
     image: postgres
     container_name: feedbin_postgres

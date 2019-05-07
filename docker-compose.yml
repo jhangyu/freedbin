@@ -1,10 +1,14 @@
 version: '3'
 services:
   app:
-    image: rachsharp/feedbin
+    image: jhangyu/feedbin:latest
+    container_name: feedbin_app
     environment:
-      - MERCURY_API_KEY=
-      - SECRET_KEY_BASE=
+      - MERCURY_HOST=feedbin_mercury:3000
+      - SECRET_KEY_BASE=ntujhangyu
+      - AWS_ACCESS_KEY_ID=***your_AWS_access_key***
+      - AWS_S3_BUCKET=***your_AWS_s3_bucket***
+      - AWS_SECRET_ACCESS_KEY=***your_AWS_secret_access_key***
       - POSTGRES=postgres
       - POSTGRES_USERNAME=feedbin
       - POSTGRES_PASSWORD=feedbin
@@ -17,8 +21,11 @@ services:
       - MEMCACHED_HOSTS=memcached:11211
     ports:
       - 9292:9292
+    volumes:
+      - r:/feedbin:/feedbin
   postgres:
     image: postgres
+    container_name: feedbin_postgres
     environment:
       - POSTGRES_USER=feedbin
       - POSTGRES_PASSWORD=feedbin
@@ -28,29 +35,40 @@ services:
       - postgres_data:/var/lib/postgresql/data
   redis:
     image: redis
+    container_name: feedbin_redis
     expose:
       - 6379
     volumes:
       - redis_data:/data
   memcached:
     image: memcached
+    container_name: feedbin_memcached
     expose:
       - 11211
   elasticsearch:
     image: elasticsearch:2.4.6
+    container_name: feedbin_elasticsearch
     expose:
       - 9200
   refresher:
     image: rachsharp/feedbin-refresher
+    container_name: feedbin_refresher
     environment:
       - REDIS_URL=redis://redis:6379
   camo:
     image: inventid/camo
+    container_name: feedbin_camo
     environment:
       - CAMO_KEY=be-vewy-secwet
       - CAMO_HOSTNAME=camo
     expose:
       - 8081
+  mercury:
+    image: wangqiru/mercury-parser-api:latest
+    container_name: feedbin_mercury
+    expose:
+      - 3000
+    restart: always
 volumes:
   redis_data:
   postgres_data:

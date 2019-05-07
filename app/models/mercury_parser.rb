@@ -1,8 +1,8 @@
 class MercuryParser
 
-  host = ENV["MERCURY_HOST"] || "mercury.postlight.com"
+  host = ENV["MERCURY_HOST"] || "feedbin_mercury:3000"
 
-  BASE_URL = "https://#{host}/parser"
+  BASE_URL = "http://#{host}/parser"
 
   attr_reader :url
 
@@ -57,7 +57,7 @@ class MercuryParser
       query = {url: url}
       uri = URI.parse(BASE_URL)
       uri.query = query.to_query
-      response = HTTP.timeout(:global, write: 3, connect: 3, read: 3).headers("x-api-key" => ENV["MERCURY_API_KEY"]).get(uri)
+      response = HTTP.timeout(:global, write: 3, connect: 3, read: 3).get(uri)
       response.parse
     end
   end

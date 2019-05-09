@@ -5,7 +5,7 @@ services:
     container_name: feedbin_app
     environment:
       - MERCURY_HOST=feedbin_mercury:3000
-      - SECRET_KEY_BASE=ntujhangyu
+      - SECRET_KEY_BASE=***secret_key***
       - AWS_ACCESS_KEY_ID=***your_AWS_access_key***
       - AWS_S3_BUCKET=***your_AWS_s3_bucket***
       - AWS_SECRET_ACCESS_KEY=***your_AWS_secret_access_key***
@@ -23,8 +23,7 @@ services:
       - 9292:9292
     volumes:
       - r:/feedbin:/feedbin
-    restart:
-      - always
+    restart: always
   postgres:
     image: postgres
     container_name: feedbin_postgres
@@ -57,6 +56,7 @@ services:
     container_name: feedbin_refresher
     environment:
       - REDIS_URL=redis://redis:6379
+    restart: always
   camo:
     image: inventid/camo
     container_name: feedbin_camo
